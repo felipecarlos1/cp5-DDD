@@ -1,0 +1,764 @@
+openapi: 3.0.3
+info:
+  title: API RESTful para Sistema de Construção de Decks de MTG
+  description: API para gerenciamento de decks de Magic The Gathering
+  version: 1.0.0
+servers:
+  - url: https://api.mtgdeckbuilder.com/v1
+    description: Servidor de produção
+paths:
+  /usuarios:
+    post:
+      summary: Registrar novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioRegistroDTO'
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioDTO'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroDTO'
+        '409':
+          description: Email ou username já existente
+        '500':
+          description: Erro interno do servidor
+  
+  /auth/login:
+    post:
+      summary: Autenticar usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                senha:
+                  type: string
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenDTO'
+        '401':
+          description: Credenciais inválidas
+        '500':
+          description: Erro interno do servidor
+  
+  /usuarios/{id}:
+    get:
+      summary: Obter perfil de usuário
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Perfil de usuário encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioDTO'
+        '404':
+          description: Usuário não encontrado
+        '500':
+          description: Erro interno do servidor
+  
+  /decks:
+    get:
+      summary: Listar todos os decks
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Lista de decks retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeckDTO'
+        '500':
+          description: Erro interno do servidor
+    
+    post:
+      summary: Criar novo deck
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                formato:
+                  type: string
+                descricao:
+                  type: string
+                comandante:
+                  type: integer
+                cartas:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      quantidade:
+                        type: integer
+                publico:
+                  type: boolean
+      responses:
+        '201':
+          description: Deck criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeckDTO'
+        '400':
+          description: Dados inválidos
+        '500':
+          description: Erro interno do servidor
+  
+  /decks/{id}:
+    get:
+      summary: Buscar deck por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Deck encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeckDTO'
+        '404':
+          description: Deck não encontrado
+        '500':
+          description: Erro interno do servidor
+    
+    put:
+      summary: Atualizar deck existente
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                formato:
+                  type: string
+                descricao:
+                  type: string
+                publico:
+                  type: boolean
+      responses:
+        '200':
+          description: Deck atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeckDTO'
+        '400':
+          description: Dados inválidos
+        '404':
+          description: Deck não encontrado
+        '500':
+          description: Erro interno do servidor
+    
+    delete:
+      summary: Excluir deck existente
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deck excluído com sucesso
+        '404':
+          description: Deck não encontrado
+        '500':
+          description: Erro interno do servidor
+  
+  /cartas:
+    get:
+      summary: Listar cartas com filtros
+      parameters:
+        - name: nome
+          in: query
+          schema:
+            type: string
+        - name: tipo
+          in: query
+          schema:
+            type: string
+        - name: cor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de cartas retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CartaDTO'
+        '400':
+          description: Filtros inválidos
+        '500':
+          description: Erro interno do servidor
+  
+  /cartas/{id}:
+    get:
+      summary: Buscar carta por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Carta encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartaDTO'
+        '404':
+          description: Carta não encontrada
+        '500':
+          description: Erro interno do servidor
+  
+  /decks/{id}/cartas:
+    post:
+      summary: Adicionar carta a um deck
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cartaId:
+                  type: integer
+                quantidade:
+                  type: integer
+                categoria:
+                  type: string
+      responses:
+        '201':
+          description: Carta adicionada com sucesso
+        '400':
+          description: Dados inválidos
+        '404':
+          description: Deck ou carta não encontrada
+        '500':
+          description: Erro interno do servidor
+  
+  /decks/{id}/cartas/{cartaId}:
+    delete:
+      summary: Remover carta de um deck
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: cartaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Carta removida com sucesso
+        '404':
+          description: Deck ou carta não encontrada
+        '500':
+          description: Erro interno do servidor
+  
+  /formatos:
+    get:
+      summary: Listar formatos disponíveis
+      responses:
+        '200':
+          description: Lista de formatos retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FormatoDTO'
+        '500':
+          description: Erro interno do servidor
+  
+  /decks/{id}/verificar-legalidade:
+    post:
+      summary: Verificar legalidade de deck
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                formato:
+                  type: string
+      responses:
+        '200':
+          description: Verificação de legalidade concluída
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  legal:
+                    type: boolean
+                  problemas:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Dados inválidos
+        '404':
+          description: Deck não encontrado
+        '500':
+          description: Erro interno do servidor
+  
+  /usuarios/{id}/colecao:
+    get:
+      summary: Listar cartas na coleção do usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de cartas da coleção retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    carta:
+                      $ref: '#/components/schemas/CartaDTO'
+                    quantidade:
+                      type: integer
+        '404':
+          description: Usuário não encontrado
+        '500':
+          description: Erro interno do servidor
+  
+  /decks/{id}/estatisticas:
+    get:
+      summary: Obter estatísticas de deck
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Estatísticas retornadas com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstatisticasDeckDTO'
+        '404':
+          description: Deck não encontrado
+        '500':
+          description: Erro interno do servidor
+  
+  /decks/{id}/comentarios:
+    get:
+      summary: Listar comentários de um deck
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de comentários retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    autor:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        username:
+                          type: string
+                    conteudo:
+                      type: string
+                    dataCriacao:
+                      type: string
+                      format: date-time
+        '404':
+          description: Deck não encontrado
+        '500':
+          description: Erro interno do servidor
+    
+    post:
+      summary: Adicionar comentário a um deck
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                conteudo:
+                  type: string
+      responses:
+        '201':
+          description: Comentário adicionado com sucesso
+        '400':
+          description: Dados inválidos
+        '404':
+          description: Deck não encontrado
+        '500':
+          description: Erro interno do servidor
+  
+  /usuarios/{id}/favoritos/{deckId}:
+    post:
+      summary: Marcar deck como favorito
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: deckId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Deck marcado como favorito com sucesso
+        '400':
+          description: Dados inválidos
+        '404':
+          description: Usuário ou deck não encontrado
+        '409':
+          description: Deck já está marcado como favorito
+        '500':
+          description: Erro interno do servidor
+  
+  /tags:
+    get:
+      summary: Listar tags populares
+      responses:
+        '200':
+          description: Lista de tags retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    nome:
+                      type: string
+                    contagem:
+                      type: integer
+        '500':
+          description: Erro interno do servidor
+
+components:
+  schemas:
+    UsuarioDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        nome:
+          type: string
+        dataCriacao:
+          type: string
+          format: date-time
+        avatar:
+          type: string
+        biografia:
+          type: string
+        totalDecks:
+          type: integer
+        totalFavoritos:
+          type: integer
+    
+    UsuarioRegistroDTO:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        senha:
+          type: string
+        nome:
+          type: string
+    
+    TokenDTO:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+    
+    DeckDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        formato:
+          type: string
+        descricao:
+          type: string
+        comandante:
+          type: object
+          properties:
+            id:
+              type: integer
+            nome:
+              type: string
+            imageUrl:
+              type: string
+        cartas:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              nome:
+                type: string
+              tipo:
+                type: string
+              custoMana:
+                type: string
+              quantidade:
+                type: integer
+              categoria:
+                type: string
+        autor:
+          type: object
+          properties:
+            id:
+              type: integer
+            username:
+              type: string
+        publico:
+          type: boolean
+        dataCriacao:
+          type: string
+          format: date-time
+        visualizacoes:
+          type: integer
+        favoritos:
+          type: integer
+    
+    CartaDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        custoMana:
+          type: string
+        tipo:
+          type: string
+        texto:
+          type: string
+        poder:
+          type: string
+        resistencia:
+          type: string
+        cores:
+          type: array
+          items:
+            type: string
+        raridade:
+          type: string
+        conjunto:
+          type: string
+        imageUrl:
+          type: string
+    
+    FormatoDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        nome:
+          type: string
+        descricao:
+          type: string
+        tamanhoMinimoDeck:
+          type: integer
+        maximoCopiasPermitidas:
+          type: integer
+        cartasBanidas:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              nome:
+                type: string
+    
+    EstatisticasDeckDTO:
+      type: object
+      properties:
+        deckId:
+          type: integer
+        totalCartas:
+          type: integer
+        distribuicaoCores:
+          type: object
+          properties:
+            branco:
+              type: integer
+            azul:
+              type: integer
+            preto:
+              type: integer
+            vermelho:
+              type: integer
+            verde:
+              type: integer
+            incolor:
+              type: integer
+            multicolor:
+              type: integer
+        curvaDeMana:
+          type: object
+          additionalProperties:
+            type: integer
+        valorMedioMana:
+          type: number
+          format: float
+    
+    ErroDTO:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        erro:
+          type: string
+        mensagem:
+          type: string
+        path:
+          type: string
+  
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
